@@ -14,12 +14,21 @@ import java.util.stream.IntStream;
 
 public class Main {
 
+    private static void drawLine(ImageProcessor imageProcessor, Line line) {
+        Point center = new Point(0, 0);
+        Point test = line.pointAt(0);
+        imageProcessor.drawLine(center.x, center.y, test.x, test.y);
+
+        Point p0 = line.pointAt(-2000);
+        Point p1 = line.pointAt(2000);
+        imageProcessor.drawLine(p0.x, p0.y, p1.x, p1.y);
+    }
+
     private static void searchLanes(ImagePlus image) {
         image.show();
         ImageProcessor original = image.getProcessor();
 
         ImageProcessor graySlice = image.getProcessor().convertToByte(false);
-        ImagePlus grayImage = new ImagePlus("", graySlice);
         graySlice.findEdges();
 
         Optional<LaneDetect.Result> result = LaneDetect.adaptingLaneSearch(graySlice);
@@ -30,13 +39,7 @@ public class Main {
         original.setColor(Color.GREEN);
         original.setLineWidth(3);
         for (Line line : Arrays.asList(lanes.left, lanes.right)) {
-            Point center = new Point(0, 0);
-            Point test = line.pointAt(0);
-            original.drawLine(center.x, center.y, test.x, test.y);
-
-            Point p0 = line.pointAt(-2000);
-            Point p1 = line.pointAt(2000);
-            original.drawLine(p0.x, p0.y, p1.x, p1.y);
+            drawLine(original, line);
         }
         image.repaintWindow();
     }
