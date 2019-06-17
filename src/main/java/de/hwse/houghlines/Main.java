@@ -10,6 +10,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Main {
@@ -24,7 +25,7 @@ public class Main {
         imageProcessor.drawLine(p0.x, p0.y, p1.x, p1.y);
     }
 
-    private static void searchLanes(ImagePlus image) {
+    private static Optional<LaneDetect.Result> searchLanes(ImagePlus image) {
         image.show();
         ImageProcessor original = image.getProcessor();
 
@@ -33,7 +34,7 @@ public class Main {
 
         Optional<LaneDetect.Result> result = LaneDetect.adaptingLaneSearch(graySlice);
 
-        if (!result.isPresent()) return;
+        if (!result.isPresent()) return result;
         LaneDetect.Result lanes = result.get();
 
         original.setColor(Color.GREEN);
@@ -41,7 +42,13 @@ public class Main {
         for (Line line : Arrays.asList(lanes.left, lanes.right)) {
             drawLine(original, line);
         }
+        /*original.setColor(Color.RED);
+        original.setLineWidth(1);
+        for (Line line: lanes.allFound) {
+            drawLine(original, line);
+        }*/
         image.repaintWindow();
+        return result;
     }
 
     public static void main(String[] args) {
@@ -53,10 +60,20 @@ public class Main {
         imagePlus.show();
 
         List<Roi> rois = LaneDetect.splitImage(imagePlus.getWidth(), imagePlus.getHeight());
-        for (Roi roi: rois) {
-            ImagePlus sliceImage = Util.cutImage(imagePlus.getProcessor(), roi);
-            searchLanes(sliceImage);
-        }
+
+        List<Optional<LaneDetect.Result>> results = rois.stream()
+                .map(roi -> Util.cutImage(imagePlus.getProcessor(), roi))
+                .map(Main::searchLanes)
+                .collect(Collectors.toList());
+
+        results.forEach(res -> {
+            if (!res.isPresent()) {
+                System.out.println("not present");
+            } else {
+                LaneDetect.Result result = res.get();
+                System.out.println("left = " + result.left + ", right = " + result.right);
+            }
+        });
     }
 
 }

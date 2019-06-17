@@ -20,6 +20,14 @@ public class Line {
         return Double.compare(line.distance, distance) == 0;
     }
 
+    @Override
+    public String toString() {
+        return "Line{" +
+                "angle=" + angle +
+                ", distance=" + distance +
+                '}';
+    }
+
     Point pointAt(double factor) {
         double a = Math.cos(Util.angleToRad(angle));
         double b = Math.sin(Util.angleToRad(angle));
@@ -30,4 +38,5 @@ public class Line {
                 Math.toIntExact(Math.round(y0 + factor * a))
         );
     }
+
 }

@@ -6,8 +6,6 @@ import ij.process.ImageProcessor;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -16,10 +14,12 @@ public class LaneDetect {
     static class Result {
         public final Line left;
         public final Line right;
+        public final List<Line> allFound;
 
-        Result(Line left, Line right) {
+        Result(Line left, Line right, List<Line> allFound) {
             this.left = left;
             this.right = right;
+            this.allFound = allFound;
         }
     }
 
@@ -35,7 +35,7 @@ public class LaneDetect {
         // / 4: 120 120
         // / 8: 60, 60
         // / 8: 60, 60 .. or continue
-        return IntStream.of(2,4,8,8)
+        return IntStream.of(2,4,8,16)
                 .map(i -> height / i)
                 .mapToObj(y -> new Roi(0, y, width, y))
                 .collect(Collectors.toList());
@@ -48,12 +48,14 @@ public class LaneDetect {
 
         Optional<Line> left = okayCircles.stream()
                 .filter(l -> 0 < l.angle && l.angle < 90)
-                .min(Comparator.comparing(l -> l.angle));
+                .max(Comparator.comparing(l -> l.distance));
+                //.min(Comparator.comparing(l -> l.angle));
         Optional<Line> right = okayCircles.stream()
                 .filter(l -> 90 < l.angle && l.angle < 180)
-                .max(Comparator.comparing(l -> l.angle));
+                .min(Comparator.comparing(l -> l.distance));
+                //.max(Comparator.comparing(l -> l.angle));
         if (left.isPresent() && right.isPresent()) {
-            return Optional.of(new Result(left.get(), right.get()));
+            return Optional.of(new Result(left.get(), right.get(), okayCircles));
         } else {
             return Optional.empty();
         }
@@ -61,7 +63,7 @@ public class LaneDetect {
 
     public static Optional<Result> adaptingLaneSearch(ImageProcessor imageProcessor) {
         // try decreasing thresholds to find lanes
-        return IntStream.of(300, 250, 200, 150, 100, 50)
+        return IntStream.of(100, 50, 10, 5)
                 .mapToObj(threshold -> LaneDetect.searchLane(imageProcessor, threshold))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
