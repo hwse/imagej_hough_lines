@@ -48,10 +48,12 @@ public class LaneDetect {
 
         Optional<Line> left = okayCircles.stream()
                 .filter(l -> 0 < l.angle && l.angle < 90)
+                .map(Line::withPositiveDistance)
                 .max(Comparator.comparing(l -> l.distance));
                 //.min(Comparator.comparing(l -> l.angle));
         Optional<Line> right = okayCircles.stream()
                 .filter(l -> 90 < l.angle && l.angle < 180)
+                .map(Line::withPositiveDistance)
                 .min(Comparator.comparing(l -> l.distance));
                 //.max(Comparator.comparing(l -> l.angle));
         if (left.isPresent() && right.isPresent()) {

@@ -7,6 +7,7 @@ import ij.process.ImageProcessor;
 
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +58,7 @@ public class Main {
         ImagePlus rawImage = IJ.openImage(args[0]);
         ImagePlus imagePlus = Util.cutImage(rawImage.getProcessor(), new Roi(0, rawImage.getHeight() / 2,
                 rawImage.getWidth(), rawImage.getHeight() /2));
-        imagePlus.show();
+        rawImage.show();
 
         List<Roi> rois = LaneDetect.splitImage(imagePlus.getWidth(), imagePlus.getHeight());
 
@@ -65,6 +66,18 @@ public class Main {
                 .map(roi -> Util.cutImage(imagePlus.getProcessor(), roi))
                 .map(Main::searchLanes)
                 .collect(Collectors.toList());
+
+        List<Line> finalLines = new ArrayList<>();
+        for (int i = 0; i < rois.size(); i++) {
+            Roi roi = rois.get(i);
+            Optional<LaneDetect.Result> result = results.get(i);
+            if (!result.isPresent()) continue;
+            Line left = result.get().left.translate(0, rawImage.getHeight()/2 + roi.getBounds().y);
+            Line right = result.get().right.translate(0, rawImage.getHeight()/2 + roi.getBounds().y);
+            finalLines.add(left);
+            finalLines.add(right);
+        }
+        finalLines.forEach(l -> drawLine(rawImage.getProcessor(), l));
 
         results.forEach(res -> {
             if (!res.isPresent()) {
