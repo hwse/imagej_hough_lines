@@ -1,6 +1,7 @@
 package de.hwse.houghlines;
 
 import java.awt.*;
+import java.nio.channels.Pipe;
 
 public class Line {
     public final double angle;
@@ -45,15 +46,30 @@ public class Line {
         );
     }
 
-    double atX(double x) {
-        if (angle == 0.0) {
-            return 0.0;
+    double yAt(double x) {
+        if (angle == 0.0 || angle == 180.0 || angle == -180.0) {
+            return distance;
+        } else if (angle == 90.0 || angle == 270.0 || angle == -90 || angle == -280.0) {
+            return Double.NaN;
         }
-        return -Math.cos(phi())/Math.sin(phi()) * x + distance / Math.sin(phi());
+        return -Math.cos(phi()) / Math.sin(phi()) * x + distance / Math.sin(phi());
     }
 
     Position positionAtX(double x) {
-        return new Position(x, atX(x));
+        return new Position(x, yAt(x));
+    }
+
+    double xAt(double y) {
+        if (angle == 0.0 || angle == 180.0 || angle == -180) {
+            return Double.NaN;
+        } else if (angle == 90.0 || angle == 270 || angle == -90.0 || angle == -270.0) {
+            return distance;
+        }
+        return -Math.sin(phi())/Math.cos(phi()) * y + distance / Math.cos(phi());
+    }
+
+    Position positionAtY(double y) {
+        return new Position(xAt(y), y);
     }
 
     /**

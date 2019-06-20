@@ -45,18 +45,24 @@ public class LaneDetect {
         List<Line> okayCircles = Hough.findLines(imageProcessor, threshold)
                 .stream().filter(l -> angleOkay(l.angle)).collect(Collectors.toList());
         if (okayCircles.isEmpty()) return Optional.empty();
-
+        double halfWidth = imageProcessor.getWidth() / 2;
+        double height = imageProcessor.getHeight();
         Optional<Line> left = okayCircles.stream()
-                .filter(l -> 0 < l.angle && l.angle < 90)
-                .map(Line::withPositiveDistance)
-                .max(Comparator.comparing(l -> l.distance));
+                //.filter(l -> 0 < l.angle && l.angle < 90)
+                .filter(l -> l.xAt(height) < halfWidth)
+                //.map(Line::withPositiveDistance)
+                .max(Comparator.comparing(l -> l.xAt(height)));
                 //.min(Comparator.comparing(l -> l.angle));
         Optional<Line> right = okayCircles.stream()
-                .filter(l -> 90 < l.angle && l.angle < 180)
-                .map(Line::withPositiveDistance)
-                .min(Comparator.comparing(l -> l.distance));
+                //.filter(l -> 90 < l.angle && l.angle < 180)
+                .filter(l -> l.xAt(height) >= halfWidth)
+                //.map(Line::withPositiveDistance)
+                .min(Comparator.comparing(l -> l.xAt(height)));
                 //.max(Comparator.comparing(l -> l.angle));
         if (left.isPresent() && right.isPresent()) {
+            if (Math.abs(left.get().xAt(height) - right.get().xAt(height)) < 200) {
+                return Optional.empty();
+            }
             return Optional.of(new Result(left.get(), right.get(), okayCircles));
         } else {
             return Optional.empty();
@@ -65,7 +71,8 @@ public class LaneDetect {
 
     public static Optional<Result> adaptingLaneSearch(ImageProcessor imageProcessor) {
         // try decreasing thresholds to find lanes
-        return IntStream.of(100, 50, 10, 5)
+        int startThreshold = imageProcessor.getHeight() * 2;
+        return IntStream.iterate(startThreshold, i -> i / 2)
                 .mapToObj(threshold -> LaneDetect.searchLane(imageProcessor, threshold))
                 .filter(Optional::isPresent)
                 .map(Optional::get)

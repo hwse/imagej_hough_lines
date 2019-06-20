@@ -38,9 +38,7 @@ public class Position {
         if (o == null || getClass() != o.getClass()) return false;
 
         Position position = (Position) o;
-
-        if (Double.compare(position.x, x) != 0) return false;
-        return Double.compare(position.y, y) == 0;
+        return almostEquals(position);
     }
 
     public boolean almostEquals(Position other) {
