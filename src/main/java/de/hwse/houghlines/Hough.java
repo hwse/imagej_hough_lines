@@ -23,7 +23,7 @@ public class Hough {
 
                 // if pixel is over threshhold translate "hough line" to accumulator
                 int pixel = imageProcessor.getPixel(x, y);
-                if (pixel > 200) {
+                if (pixel > 128) {
                     accumulator.countPoint(x,y);
                 }
             }

@@ -44,7 +44,7 @@ class LineTest {
     @Test
     public void testTranslate() {
         IntStream.range(-170, 170).boxed()
-                .flatMap(angle -> IntStream.range(-100, 100).mapToObj(dist -> Pair.of(angle, dist)))
+                .flatMap(angle -> IntStream.range(-10, 10).mapToObj(dist -> Pair.of(angle, dist)))
                 .map(pair -> new Line(pair.getFirst(), pair.getSecond()))
                 .flatMap(l -> translationsStream().map(trans -> Pair.of(l, trans)))
                 .forEach(pair -> {
@@ -61,6 +61,32 @@ class LineTest {
                     assertEquals(expected, actual, pair::toString);
 
                     // check 2: translate in x direction TODO
+                });
+    }
+
+    @Test
+    public void sanityTest() {
+        IntStream.range(-359, 359)
+                .mapToObj(angle -> new Line(angle, 100))
+                .forEach(line -> {
+                    Line pos = line.withPositiveAngle();
+                    assertTrue(pos.angle >= 0);
+
+                    Line sane = line.sanitizeAngle();
+                    assertTrue(0.0 <= sane.angle && sane.angle < 180.0);
+                });
+    }
+
+    @Test
+    public void angleDiffTest() {
+        IntStream.range(-359, 359).boxed()
+                .flatMap(angle0 -> IntStream.range(-359, 359).mapToObj(angle1 ->Pair.of(angle0, angle1)))
+                .forEach(pair -> {
+                    Line l0 = new Line(pair.getFirst(), 100);
+                    Line l1 = new Line(pair.getSecond(), 50);
+                    double diff = l0.angleDiff(l1);
+                    assertTrue(0.0 <= diff && diff < 180.0,
+                            "diff == " + diff + " for " + l0 + " and " + l1);
                 });
     }
 

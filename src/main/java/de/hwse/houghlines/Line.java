@@ -4,11 +4,13 @@ import java.awt.*;
 import java.nio.channels.Pipe;
 
 public class Line {
+    public static final Line ZERO_ANGLE = new Line(0.0, 1.0);
+
     public final double angle;
     public final double distance;
 
     public Line(double angle, double distance) {
-        if (angle <= -360 || angle >= 360)
+        if (angle <= -360.0 || angle >= 360.0)
             throw new IllegalArgumentException("pass some good angle bitch");
         this.angle = angle;
         this.distance = distance;
@@ -81,6 +83,33 @@ public class Line {
         } else {
             return this;
         }
+    }
+
+    /**
+     * Equal representation with a minimal positive angle.
+     */
+    Line sanitizeAngle() {
+        Line pos = this.withPositiveAngle();
+        if (pos.angle >= 180.0) {
+            return new Line(angle - 180, -distance);
+        }
+        return pos;
+    }
+
+    Line withPositiveAngle() {
+        if (angle < 0) {
+            Line inc = new Line(angle + 180.0, -distance);
+            return inc.withPositiveAngle();
+        } else {
+            return this;
+        }
+    }
+
+    double angleDiff(Line other) {
+        Line l0 = this.sanitizeAngle();
+        Line l1 = other.sanitizeAngle();
+        double diff = Math.abs(l1.angle - l0.angle);
+        return diff % 180.0;
     }
 
     Line translate(double x, double y) {
