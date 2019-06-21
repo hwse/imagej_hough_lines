@@ -24,12 +24,12 @@ public class Main {
         image.show();
         ImageProcessor original = image.getProcessor();
 
-        // ImageProcessor graySlice = image.getProcessor().convertToByte(false);
-        //graySlice.findEdges();
-        //graySlice.threshold(200);
+        ImageProcessor graySlice = image.getProcessor().convertToByte(false);
+        graySlice.findEdges();
+        graySlice.threshold(200);
 
         // converting to binary image can also be used
-        ImageProcessor binary = image.getProcessor().convertToByte(false);
+        /*ImageProcessor binary = image.getProcessor().convertToByte(false);
         binary.threshold(180);
         binary.erode();
         binary.dilate();
@@ -39,13 +39,12 @@ public class Main {
         binary.invert();
 
         ImagePlus binaryImage = new ImagePlus("binary", binary);
-
-        binaryImage.show();
+        binaryImage.show(); */
 
         //ImagePlus grayImage = new ImagePlus("gray", gray);
         //grayImage.show();
 
-        Optional<LaneDetect.Result> result = LaneDetect.adaptingLaneSearch(binary, previous);
+        Optional<LaneDetect.Result> result = LaneDetect.adaptingLaneSearch(graySlice, previous);
 
         if (!result.isPresent()) return result;
         LaneDetect.Result lanes = result.get();
