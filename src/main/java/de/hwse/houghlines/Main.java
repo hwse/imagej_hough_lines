@@ -30,9 +30,16 @@ public class Main {
 
         // converting to binary image can also be used
         ImageProcessor binary = image.getProcessor().convertToByte(false);
-        binary.threshold(200);
+        binary.threshold(180);
+        binary.erode();
+        binary.dilate();
+
+        binary.invert();
+        new BinaryProcessor((ByteProcessor)binary).skeletonize();
+        binary.invert();
 
         ImagePlus binaryImage = new ImagePlus("binary", binary);
+
         binaryImage.show();
 
         //ImagePlus grayImage = new ImagePlus("gray", gray);

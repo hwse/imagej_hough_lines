@@ -26,6 +26,11 @@ public class LaneDetect {
         }
     }
 
+    private static final boolean angleOkay(Line line) {
+        double angle = line.sanitizeAngle().angle;
+        return angle < 80.0 || angle > 100.0;
+    }
+
     protected static List<Roi> splitImage(int width, int height) {
         // height = 480
         // / 2: 240 240
@@ -39,7 +44,7 @@ public class LaneDetect {
     }
 
     private static Predicate<Line> createPreviousFilter(Result previous, double height, boolean right) {
-        double maxPreviousDiff = 200.0;
+        double maxPreviousDiff = 100.0;
         double maxAngleDiff = 50.0;
 
         Line previousLine = right ? previous.right : previous.left;
@@ -78,6 +83,7 @@ public class LaneDetect {
 
         Optional<Line> left = okayCircles.stream()
                 .map(Line::sanitizeAngle)
+                .filter(LaneDetect::angleOkay)
                 //.filter(l -> 0 < l.angle && l.angle < 90)
                 //.filter(l -> l.xAt(height) < width * 3 / 4)
                 .filter(previousLeftFilter)
@@ -85,6 +91,7 @@ public class LaneDetect {
                 .min(leftComparator);
         Optional<Line> right = okayCircles.stream()
                 .map(Line::sanitizeAngle)
+                .filter(LaneDetect::angleOkay)
                 //.filter(l -> 90 < l.angle && l.angle < 180)
                 //.filter(l -> l.xAt(height) >= width / 4)
                 .filter(previousRightFilter)
@@ -107,8 +114,8 @@ public class LaneDetect {
 
     public static Optional<Result> adaptingLaneSearch(ImageProcessor imageProcessor, Result previous) {
         // try decreasing thresholds to find lanes
-        int startThreshold = imageProcessor.getHeight() * 2;
-        return IntStream.iterate(startThreshold, i -> i - 50)
+        int startThreshold = imageProcessor.getHeight() * 3 / 4;
+        return IntStream.iterate(startThreshold, i -> i - 20)
                 .filter(i -> i > 0)
                 .limit(10)
                 .mapToObj(threshold -> LaneDetect.searchLane(imageProcessor, threshold, previous))
