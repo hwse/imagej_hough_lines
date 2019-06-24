@@ -166,9 +166,7 @@ public class LaneDetect {
         }
     }
 
-    public static Optional<Result> adaptingLaneSearch(ImageProcessor imageProcessor, Result previous) {
-        // try decreasing thresholds to find lanes
-        int startThreshold = imageProcessor.getHeight() * 3 / 4;
+    public static Optional<Result> adaptingLaneSearch(ImageProcessor imageProcessor, Result previous, int startThreshold) {
         /*return IntStream.iterate(startThreshold, i -> i - 20)
                 .filter(i -> i > 0)
                 .limit(10)
@@ -201,6 +199,12 @@ public class LaneDetect {
         } else {
             return Optional.empty();
         }
+    }
+
+    public static Optional<Result> adaptingLaneSearch(ImageProcessor imageProcessor, Result previous) {
+        // try decreasing thresholds to find lanes
+        int startThreshold = imageProcessor.getHeight() * 3 / 4;
+        return adaptingLaneSearch(imageProcessor, previous, startThreshold);
     }
 
 }

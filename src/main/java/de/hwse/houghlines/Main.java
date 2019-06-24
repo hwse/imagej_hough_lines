@@ -7,6 +7,7 @@ import ij.process.BinaryProcessor;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 
+import javax.swing.text.html.Option;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ public class Main {
         //ImagePlus grayImage = new ImagePlus("gray", gray);
         //grayImage.show();
 
-        Optional<LaneDetect.Result> result = LaneDetect.adaptingLaneSearch(graySlice, previous);
+        Optional<LaneDetect.Result> result = LaneDetect.adaptingLaneSearch(graySlice, previous, 100);
 
         if (!result.isPresent()) return result;
         LaneDetect.Result lanes = result.get();
@@ -63,10 +64,27 @@ public class Main {
         return result;
     }
 
-    public static void main(String[] args) {
-        if (args.length < 1) throw new IllegalArgumentException("pass filename as argument");
-        if (!new File(args[0]).exists()) throw new IllegalArgumentException("file does not exist: " + args[0]);
-        ImagePlus rawImage = IJ.openImage(args[0]);
+    private static void findStartPoints(ImagePlus imagePlus) {
+        int halfHeight = imagePlus.getHeight() / 2;
+        ImagePlus lowerHalf = Util.cutImage(imagePlus.getProcessor(),
+                new Roi(0, halfHeight, imagePlus.getWidth(), halfHeight));
+        Optional<LaneDetect.Result> lanes = searchLanes(lowerHalf, null);
+        if (lanes.isPresent()) {
+            Line left = lanes.get().left.translate(0, halfHeight);
+            Line right = lanes.get().right.translate(0, halfHeight);
+            Util.drawLine(imagePlus.getProcessor(), left);
+            Util.drawLine(imagePlus.getProcessor(), right);
+
+            System.out.println(left.xAt(imagePlus.getHeight()));
+            System.out.println(right.xAt(imagePlus.getHeight()));
+        } else {
+            System.out.println("no lane found");
+        }
+    }
+
+    public static void startHoughSearch(String[] args) {
+        ImagePlus rawImage = readImage(args);
+
         int halftHeight = rawImage.getHeight() / 2;
         ImagePlus imagePlus = Util.cutImage(rawImage.getProcessor(), new Roi(0, halftHeight,
                 rawImage.getWidth(), halftHeight));
@@ -121,6 +139,23 @@ public class Main {
                 System.out.println("left = " + result.left + ", right = " + result.right);
             }
         });
+    }
+
+    public static ImagePlus readImage(String[] args) {
+        if (args.length < 1) throw new IllegalArgumentException("pass filename as argument");
+        if (!new File(args[0]).exists()) throw new IllegalArgumentException("file does not exist: " + args[0]);
+        return IJ.openImage(args[0]);
+    }
+
+    public static void main(String[] args) {
+        Fahrbahnkanten_V3 p = new Fahrbahnkanten_V3();
+        ImagePlus imagePlus = readImage(args);
+        ImagePlus copy = imagePlus.duplicate();
+        findStartPoints(copy);
+        copy.show();
+        p.setup("", imagePlus);
+        p.run(imagePlus.getProcessor());
+
     }
 
 }
