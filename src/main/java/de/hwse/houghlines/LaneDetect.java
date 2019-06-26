@@ -174,14 +174,14 @@ public class LaneDetect {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .findFirst(); */
-        Optional<PartialResult> left = IntStream.iterate(startThreshold, i -> i - 20)
+        Optional<PartialResult> left = IntStream.iterate(startThreshold, i -> i - 30)
                 .filter(i -> i > 0)
                 .limit(10)
                 .mapToObj(threshold -> LaneDetect.searchLane(false, imageProcessor, threshold, previous))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .findFirst();
-        Optional<PartialResult> right = IntStream.iterate(startThreshold, i -> i - 20)
+        Optional<PartialResult> right = IntStream.iterate(startThreshold, i -> i - 30)
                 .filter(i -> i > 0)
                 .limit(10)
                 .mapToObj(threshold -> LaneDetect.searchLane(true, imageProcessor, threshold, previous))

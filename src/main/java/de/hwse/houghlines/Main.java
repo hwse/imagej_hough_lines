@@ -68,10 +68,6 @@ public class Main {
         if (lanes.isPresent()) {
             Line left = lanes.get().left.translate(0, processor.getHeight() - searchHeight);
             Line right = lanes.get().right.translate(0, processor.getHeight() - searchHeight);
-            processor.setColor(Color.WHITE);
-            Util.drawLine(processor, left);
-            Util.drawLine(processor, right);
-
 
             //System.out.println(left.xAt(processor.getHeight()));
             //System.out.println(right.xAt(processor.getHeight()));
@@ -170,6 +166,11 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        List<String> argsList = Arrays.asList(args);
+        if (argsList.contains("-d")) {
+            Parameters.debug = true;
+        }
+
         Tracing p = new Tracing();
         ImagePlus imagePlus = readImage(args);
         imagePlus.show();
@@ -179,6 +180,7 @@ public class Main {
        //copy.show();
         p.setup("", imagePlus);
 
+        System.err.println("startPoints = " + startPoints);
         List<Point> leftStartPoint = startPoints == null ? null: startPoints.getFirst();
         List<Point> rightStartPoint = startPoints == null ? null: startPoints.getSecond();
         p.run(processor, leftStartPoint, rightStartPoint);

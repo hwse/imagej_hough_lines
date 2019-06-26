@@ -30,6 +30,7 @@ public class Tracing {
         xCenter = bp.getWidth() / 2;
         pointListCapacity = (yStart-yStop) / Parameters.stepSize;
 
+
         //Right Lane
         List<Point> rPoints = rightStartPoint == null ? startR(bp) : rightStartPoint;
         trace(bp,rPoints);
@@ -40,11 +41,34 @@ public class Tracing {
 
         //Make Overlay
         Overlay overlay = new Overlay();
-        /*ImageRoi edges = new ImageRoi(0,0,bp);
-        edges.setOpacity(Parameters.edgeOverlayOpacity);
 
+        if (Parameters.debug) {
+            ImageRoi edges = new ImageRoi(0,0,bp);
+            edges.setOpacity(Parameters.edgeOverlayOpacity);
+            overlay.add(edges);
 
-        overlay.add(edges);*/
+            if (rightStartPoint != null) {
+                Point p0 = rightStartPoint.get(0);
+                Point p1 = rightStartPoint.get(1);
+                double xDiff = p1.x - p0.x;
+                double yDiff = p1.y - p0.y;
+                Point pn = new Point((int) (p0.x + xDiff * 100), (int) (p0.y + yDiff * 100));
+                Roi leftLaneRoi = makeRoi(Arrays.asList(p0, pn));
+                leftLaneRoi.setStrokeColor(Color.YELLOW);
+                overlay.add(leftLaneRoi);
+            }
+            if (leftStartPoint != null) {
+                Point p0 = leftStartPoint.get(0);
+                Point p1 = leftStartPoint.get(1);
+                double xDiff = p1.x - p0.x;
+                double yDiff = p1.y - p0.y;
+                Point pn = new Point((int) (p0.x + xDiff * 100), (int) (p0.y + yDiff * 100));
+                Roi leftLaneRoi = makeRoi(Arrays.asList(p0, pn));
+                leftLaneRoi.setStrokeColor(Color.YELLOW);
+                overlay.add(leftLaneRoi);
+            }
+        }
+
 
         double strokeWidth = bp.getWidth() / 200.0;
         Roi roiRight = makeRoi(rPoints);
