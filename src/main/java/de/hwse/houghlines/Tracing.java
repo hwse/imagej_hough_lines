@@ -4,7 +4,6 @@ import ij.*;
 import ij.process.*;
 import ij.gui.*;
 import java.awt.*;
-import ij.plugin.filter.*;
 import java.util.*;
 import java.util.List;
 
@@ -20,10 +19,10 @@ public class Tracing {
         this.imp = imp;
     }
 
-    public void run(ImageProcessor ip, List<Point> leftStartPoint, List<Point> rightStartPoint) {
+    public void run(ByteProcessor bp, List<Point> leftStartPoint, List<Point> rightStartPoint) {
 
         //Vorverarbeitung
-        ByteProcessor bp = preprocessing(ip);
+        //ByteProcessor bp = preprocessing(ip);
 
         //Parameters
         yStart = bp.getHeight() - 2;
@@ -33,11 +32,11 @@ public class Tracing {
 
         //Right Lane
         List<Point> rPoints = rightStartPoint == null ? startR(bp) : rightStartPoint;
-        traceL(bp,rPoints);
+        trace(bp,rPoints);
 
         //Left Lane
         List<Point> lPoints = leftStartPoint == null ? startL(bp): leftStartPoint;
-        traceL(bp,lPoints);
+        trace(bp,lPoints);
 
         //Make Overlay
         Overlay overlay = new Overlay();
@@ -51,18 +50,19 @@ public class Tracing {
         imp.setOverlay(overlay);
         imp.show();
         //imp.setImage(bp.getBufferedImage());
+
+        System.out.print("right");
+        for (Point p: rPoints) {
+            System.out.print("," + p.x + "/" + p.y);
+        }
+        System.out.println();
+        System.out.print("left");
+        for (Point p: lPoints) {
+            System.out.print("," + p.x + "/" + p.y);
+        }
+        System.out.println();
     }
 
-    private ByteProcessor preprocessing(ImageProcessor ip){
-        ByteProcessor bp = ip.convertToByteProcessor();
-        bp.threshold(Parameters.binaryThreshold);
-        bp.dilate();
-        //bp.erode();
-        //bp.findEdges();
-        //bp.invert();
-        //bp.skeletonize();
-        return bp;
-    }
 
     private List<Point> startR(ByteProcessor bp){
         List<Point> points = new ArrayList<Point>(pointListCapacity);
@@ -129,7 +129,7 @@ public class Tracing {
         }
     }
 
-    private void traceL(ByteProcessor bp, List<Point> points){
+    private void trace(ByteProcessor bp, List<Point> points){
         List<Point> pointbuffer = new ArrayList<Point>(pointListCapacity);
         boolean gap = false;
 

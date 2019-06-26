@@ -22,8 +22,8 @@ public class Main {
         ImageProcessor original = image.getProcessor();
 
         ImageProcessor graySlice = image.getProcessor().convertToByte(false);
-        graySlice.threshold(200);
-        graySlice.findEdges();
+        //graySlice.threshold(200);
+        //graySlice.findEdges();
 
         // converting to binary image can also be used
         /*ImageProcessor binary = image.getProcessor().convertToByte(false);
@@ -38,15 +38,15 @@ public class Main {
         ImagePlus binaryImage = new ImagePlus("binary", binary);
         binaryImage.show(); */
 
-        ImagePlus grayImage = new ImagePlus("gray", graySlice);
-        grayImage.show();
+        //ImagePlus grayImage = new ImagePlus("hough", graySlice);
+        //grayImage.show();
 
         Optional<LaneDetect.Result> result = LaneDetect.adaptingLaneSearch(graySlice, previous, Parameters.houghThreshold);
 
         if (!result.isPresent()) return result;
         LaneDetect.Result lanes = result.get();
 
-        original.setColor(Color.RED);
+        original.setColor(Color.WHITE);
         original.setLineWidth(1);
         for (Line line: lanes.allFound) {
             Util.drawLine(original, line);
@@ -60,22 +60,23 @@ public class Main {
         return result;
     }
 
-    private static Pair<List<Point>, List<Point>> findStartPoints(ImagePlus imagePlus) {
-        int searchHeight = (int) (imagePlus.getHeight() * 0.25);
-        ImagePlus lowerHalf = Util.cutImage(imagePlus.getProcessor(),
-                new Roi(0, imagePlus.getHeight() - searchHeight, imagePlus.getWidth(), searchHeight));
+    private static Pair<List<Point>, List<Point>> findStartPoints(ByteProcessor processor) {
+        int searchHeight = (int) (processor.getHeight() * 0.25);
+        ImagePlus lowerHalf = Util.cutImage(processor,
+                new Roi(0, processor.getHeight() - searchHeight, processor.getWidth(), searchHeight));
         Optional<LaneDetect.Result> lanes = searchLanes(lowerHalf, null);
         if (lanes.isPresent()) {
-            Line left = lanes.get().left.translate(0, imagePlus.getHeight() - searchHeight);
-            Line right = lanes.get().right.translate(0, imagePlus.getHeight() - searchHeight);
-            Util.drawLine(imagePlus.getProcessor(), left);
-            Util.drawLine(imagePlus.getProcessor(), right);
+            Line left = lanes.get().left.translate(0, processor.getHeight() - searchHeight);
+            Line right = lanes.get().right.translate(0, processor.getHeight() - searchHeight);
+            processor.setColor(Color.WHITE);
+            Util.drawLine(processor, left);
+            Util.drawLine(processor, right);
 
 
-            //System.out.println(left.xAt(imagePlus.getHeight()));
-            //System.out.println(right.xAt(imagePlus.getHeight()));
+            //System.out.println(left.xAt(processor.getHeight()));
+            //System.out.println(right.xAt(processor.getHeight()));
 
-            double height = imagePlus.getHeight()-2;
+            double height = processor.getHeight()-2;
 
             List<Point> leftPoints = new ArrayList<>();
             leftPoints.add(left.positionAtY(height + Parameters.stepSize).roundToPoint());
@@ -156,17 +157,31 @@ public class Main {
         return IJ.openImage(args[0]);
     }
 
+
+    private static ByteProcessor preprocessing(ImageProcessor ip){
+        ByteProcessor bp = ip.convertToByteProcessor();
+        bp.threshold(Parameters.binaryThreshold);
+        bp.dilate();
+        //bp.erode();
+        bp.findEdges();
+        //bp.invert();
+        //bp.skeletonize();
+        return bp;
+    }
+
     public static void main(String[] args) {
         Tracing p = new Tracing();
         ImagePlus imagePlus = readImage(args);
-        ImagePlus copy = imagePlus.duplicate();
-        Pair<List<Point>, List<Point>> startPoints = findStartPoints(copy);
-        copy.show();
+        imagePlus.show();
+        ByteProcessor processor = preprocessing(imagePlus.getProcessor());
+        Pair<List<Point>, List<Point>> startPoints = findStartPoints(processor);
+        //ImagePlus copy = imagePlus.duplicate();
+       //copy.show();
         p.setup("", imagePlus);
 
         List<Point> leftStartPoint = startPoints == null ? null: startPoints.getFirst();
         List<Point> rightStartPoint = startPoints == null ? null: startPoints.getSecond();
-        p.run(imagePlus.getProcessor(), leftStartPoint, rightStartPoint);
+        p.run(processor, leftStartPoint, rightStartPoint);
 
     }
 
