@@ -3,19 +3,15 @@ package de.hwse.houghlines;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
-import ij.process.BinaryProcessor;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 
-import javax.swing.text.html.Option;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class Main {
 
@@ -26,8 +22,8 @@ public class Main {
         ImageProcessor original = image.getProcessor();
 
         ImageProcessor graySlice = image.getProcessor().convertToByte(false);
-        graySlice.findEdges();
         graySlice.threshold(200);
+        graySlice.findEdges();
 
         // converting to binary image can also be used
         /*ImageProcessor binary = image.getProcessor().convertToByte(false);
@@ -42,10 +38,10 @@ public class Main {
         ImagePlus binaryImage = new ImagePlus("binary", binary);
         binaryImage.show(); */
 
-        //ImagePlus grayImage = new ImagePlus("gray", gray);
-        //grayImage.show();
+        ImagePlus grayImage = new ImagePlus("gray", graySlice);
+        grayImage.show();
 
-        Optional<LaneDetect.Result> result = LaneDetect.adaptingLaneSearch(graySlice, previous, 100);
+        Optional<LaneDetect.Result> result = LaneDetect.adaptingLaneSearch(graySlice, previous, Parameters.houghThreshold);
 
         if (!result.isPresent()) return result;
         LaneDetect.Result lanes = result.get();
@@ -64,21 +60,34 @@ public class Main {
         return result;
     }
 
-    private static void findStartPoints(ImagePlus imagePlus) {
-        int halfHeight = imagePlus.getHeight() / 2;
+    private static Pair<List<Point>, List<Point>> findStartPoints(ImagePlus imagePlus) {
+        int searchHeight = (int) (imagePlus.getHeight() * 0.25);
         ImagePlus lowerHalf = Util.cutImage(imagePlus.getProcessor(),
-                new Roi(0, halfHeight, imagePlus.getWidth(), halfHeight));
+                new Roi(0, imagePlus.getHeight() - searchHeight, imagePlus.getWidth(), searchHeight));
         Optional<LaneDetect.Result> lanes = searchLanes(lowerHalf, null);
         if (lanes.isPresent()) {
-            Line left = lanes.get().left.translate(0, halfHeight);
-            Line right = lanes.get().right.translate(0, halfHeight);
+            Line left = lanes.get().left.translate(0, imagePlus.getHeight() - searchHeight);
+            Line right = lanes.get().right.translate(0, imagePlus.getHeight() - searchHeight);
             Util.drawLine(imagePlus.getProcessor(), left);
             Util.drawLine(imagePlus.getProcessor(), right);
 
-            System.out.println(left.xAt(imagePlus.getHeight()));
-            System.out.println(right.xAt(imagePlus.getHeight()));
+
+            //System.out.println(left.xAt(imagePlus.getHeight()));
+            //System.out.println(right.xAt(imagePlus.getHeight()));
+
+            double height = imagePlus.getHeight()-2;
+
+            List<Point> leftPoints = new ArrayList<>();
+            leftPoints.add(left.positionAtY(height + Parameters.stepSize).roundToPoint());
+            leftPoints.add(left.positionAtY(height).roundToPoint());
+
+            List<Point> rightPoints = new ArrayList<>();
+            rightPoints.add(right.positionAtY(height + Parameters.stepSize).roundToPoint());
+            rightPoints.add(right.positionAtY(height).roundToPoint());
+
+            return Pair.of(leftPoints, rightPoints);
         } else {
-            System.out.println("no lane found");
+            return null;
         }
     }
 
@@ -148,13 +157,16 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        Fahrbahnkanten_V3 p = new Fahrbahnkanten_V3();
+        Tracing p = new Tracing();
         ImagePlus imagePlus = readImage(args);
         ImagePlus copy = imagePlus.duplicate();
-        findStartPoints(copy);
+        Pair<List<Point>, List<Point>> startPoints = findStartPoints(copy);
         copy.show();
         p.setup("", imagePlus);
-        p.run(imagePlus.getProcessor());
+
+        List<Point> leftStartPoint = startPoints == null ? null: startPoints.getFirst();
+        List<Point> rightStartPoint = startPoints == null ? null: startPoints.getSecond();
+        p.run(imagePlus.getProcessor(), leftStartPoint, rightStartPoint);
 
     }
 

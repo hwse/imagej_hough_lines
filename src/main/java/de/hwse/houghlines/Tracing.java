@@ -6,8 +6,9 @@ import ij.gui.*;
 import java.awt.*;
 import ij.plugin.filter.*;
 import java.util.*;
+import java.util.List;
 
-public class Fahrbahnkanten_V3 implements PlugInFilter {
+public class Tracing {
 
     ImagePlus imp;
     int yStart;
@@ -15,40 +16,33 @@ public class Fahrbahnkanten_V3 implements PlugInFilter {
     int xCenter;
     int pointListCapacity;
 
-    final int stepSize = 6;
-    final float horizonRatio = 0.52f;
-    final int binaryThreshold = 132;
-    final float edgeOverlayOpacity = 0.5f;
-
-
-    public int setup(String arg, ImagePlus imp) {
+    public void setup(String arg, ImagePlus imp) {
         this.imp = imp;
-        return DOES_ALL;
     }
 
-    public void run(ImageProcessor ip) {
+    public void run(ImageProcessor ip, List<Point> leftStartPoint, List<Point> rightStartPoint) {
 
         //Vorverarbeitung
         ByteProcessor bp = preprocessing(ip);
 
         //Parameters
         yStart = bp.getHeight() - 2;
-        yStop = (int)(bp.getHeight() * horizonRatio);
+        yStop = (int)(bp.getHeight() * Parameters.horizonRatio);
         xCenter = bp.getWidth() / 2;
-        pointListCapacity = (yStart-yStop) / stepSize;
+        pointListCapacity = (yStart-yStop) / Parameters.stepSize;
 
         //Right Lane
-        ArrayList<Point> rPoints = startR(bp);
-        traceR(bp,rPoints);
+        List<Point> rPoints = rightStartPoint == null ? startR(bp) : rightStartPoint;
+        traceL(bp,rPoints);
 
         //Left Lane
-        ArrayList<Point> lPoints = startL(bp);
+        List<Point> lPoints = leftStartPoint == null ? startL(bp): leftStartPoint;
         traceL(bp,lPoints);
 
         //Make Overlay
         Overlay overlay = new Overlay();
         ImageRoi edges = new ImageRoi(0,0,bp);
-        edges.setOpacity(edgeOverlayOpacity);
+        edges.setOpacity(Parameters.edgeOverlayOpacity);
         overlay.add(edges);
         overlay.add(makeRoi(rPoints));
         overlay.add(makeRoi(lPoints));
@@ -61,62 +55,62 @@ public class Fahrbahnkanten_V3 implements PlugInFilter {
 
     private ByteProcessor preprocessing(ImageProcessor ip){
         ByteProcessor bp = ip.convertToByteProcessor();
-        bp.threshold(binaryThreshold);
+        bp.threshold(Parameters.binaryThreshold);
         bp.dilate();
         //bp.erode();
-        bp.findEdges();
+        //bp.findEdges();
         //bp.invert();
         //bp.skeletonize();
         return bp;
     }
 
-    private ArrayList<Point> startR(ByteProcessor bp){
-        ArrayList<Point> points = new ArrayList<Point>(pointListCapacity);
+    private List<Point> startR(ByteProcessor bp){
+        List<Point> points = new ArrayList<Point>(pointListCapacity);
 
         for(int x = xCenter; x < bp.getWidth(); x++){
             if (bp.get(x, yStart) == 255){
-                points.add(new Point(x+(stepSize/2), yStart+stepSize));
+                points.add(new Point(x+(Parameters.stepSize/2), yStart+Parameters.stepSize));
                 points.add(new Point(x, yStart));
                 break;
             }
         }
 
         if (points.size() == 0){
-            points.add(new Point(bp.getWidth()-1, yStart+stepSize));
+            points.add(new Point(bp.getWidth()-1, yStart+Parameters.stepSize));
             points.add(new Point(bp.getWidth()-1, yStart));
         }
 
         return points;
     }
 
-    private ArrayList<Point> startL(ByteProcessor bp){
-        ArrayList<Point> points = new ArrayList<Point>(pointListCapacity);
+    private List<Point> startL(ByteProcessor bp){
+        List<Point> points = new ArrayList<Point>(pointListCapacity);
 
         for(int x = xCenter; x >= 0; x--){
             if (bp.get(x, yStart) == 255){
-                points.add(new Point(x-(stepSize/2), yStart+stepSize));
+                points.add(new Point(x-(Parameters.stepSize/2), yStart+Parameters.stepSize));
                 points.add(new Point(x, yStart));
                 break;
             }
         }
 
         if (points.size() == 0){
-            points.add(new Point(0, yStart+stepSize));
+            points.add(new Point(0, yStart+Parameters.stepSize));
             points.add(new Point(0, yStart));
         }
 
         return points;
     }
 
-    private void traceR(ByteProcessor bp, ArrayList<Point> points){
-        final int additionalSearchArea = stepSize/2;
+    private void traceR(ByteProcessor bp, List<Point> points){
+        final int additionalSearchArea = Parameters.stepSize/2;
 
-        for (int y = yStart-stepSize; y >= yStop; y-=stepSize){
+        for (int y = yStart-Parameters.stepSize; y >= yStop; y-=Parameters.stepSize){
             Point currentPoint = points.get(points.size()-1);
             Point lastPoint = points.get(points.size()-2);
             int xSlopeOffset = lastPoint.x - currentPoint.x;
-            int searchStart = (currentPoint.x - (stepSize + additionalSearchArea)) - xSlopeOffset;
-            int searchStop = (currentPoint.x + (stepSize + additionalSearchArea)) - xSlopeOffset;
+            int searchStart = (currentPoint.x - (Parameters.stepSize + additionalSearchArea)) - xSlopeOffset;
+            int searchStop = (currentPoint.x + (Parameters.stepSize + additionalSearchArea)) - xSlopeOffset;
 
             //Try find next Point
             Point nextPoint = null;
@@ -135,11 +129,11 @@ public class Fahrbahnkanten_V3 implements PlugInFilter {
         }
     }
 
-    private void traceL(ByteProcessor bp, ArrayList<Point> points){
-        ArrayList<Point> pointbuffer = new ArrayList<Point>(pointListCapacity);
+    private void traceL(ByteProcessor bp, List<Point> points){
+        List<Point> pointbuffer = new ArrayList<Point>(pointListCapacity);
         boolean gap = false;
 
-        for (int y = yStart-stepSize; y >= yStop; y-=stepSize){
+        for (int y = yStart-Parameters.stepSize; y >= yStop; y-=Parameters.stepSize){
             Point currentPoint = points.get(points.size() - 1);
             Point lastPoint = points.get(points.size() - 2);
             int dx = lastPoint.x - currentPoint.x;
@@ -186,7 +180,7 @@ public class Fahrbahnkanten_V3 implements PlugInFilter {
         }
     }
 
-    private Roi makeRoi(ArrayList<Point> points){
+    private Roi makeRoi(List<Point> points){
         int[] xs = new int[points.size()];
         int[] ys = new int[points.size()];
         for (int i = 0; i < points.size(); i++){
