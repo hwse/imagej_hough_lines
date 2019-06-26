@@ -40,13 +40,23 @@ public class Tracing {
 
         //Make Overlay
         Overlay overlay = new Overlay();
-        ImageRoi edges = new ImageRoi(0,0,bp);
+        /*ImageRoi edges = new ImageRoi(0,0,bp);
         edges.setOpacity(Parameters.edgeOverlayOpacity);
-        overlay.add(edges);
-        overlay.add(makeRoi(rPoints));
-        overlay.add(makeRoi(lPoints));
 
-        overlay.setStrokeColor(Color.RED);
+
+        overlay.add(edges);*/
+
+        double strokeWidth = bp.getWidth() / 200.0;
+        Roi roiRight = makeRoi(rPoints);
+        roiRight.setStrokeColor(Color.RED);
+        roiRight.setStrokeWidth(strokeWidth);
+        overlay.add(roiRight);
+        Roi leftRoi = makeRoi(lPoints);
+        leftRoi.setStrokeColor(Color.BLUE);
+        leftRoi.setStrokeWidth(strokeWidth);
+        overlay.add(leftRoi);
+
+        //overlay.setStrokeColor(Color.RED);
         imp.setOverlay(overlay);
         imp.show();
         //imp.setImage(bp.getBufferedImage());

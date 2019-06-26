@@ -18,7 +18,7 @@ public class Main {
 
 
     private static Optional<LaneDetect.Result> searchLanes(ImagePlus image, LaneDetect.Result previous) {
-        image.show();
+        //image.show();
         ImageProcessor original = image.getProcessor();
 
         ImageProcessor graySlice = image.getProcessor().convertToByte(false);
